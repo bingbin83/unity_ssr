@@ -208,12 +208,16 @@ public class SSR : MonoBehaviour
         return offset;
     }
 
-    public void initResources()
+    public void updateRT()
     {
         Vector2 HalfCameraSize = new Vector2(CameraSize.x / 2, CameraSize.y / 2);
 
         //////////// RT creation
+        Vector2 CurrentCameraSize = new Vector2(RenderCamera.pixelWidth, RenderCamera.pixelHeight);
+
+        if (CameraSize != CurrentCameraSize)
         {
+            CameraSize = CurrentCameraSize;
             RenderTexture.ReleaseTemporary(SSR_HierarchicalDepth_RT);
             SSR_HierarchicalDepth_RT = RenderTexture.GetTemporary(RenderCamera.pixelWidth, RenderCamera.pixelHeight, 0, RenderTextureFormat.RHalf, RenderTextureReadWrite.Linear);
             SSR_HierarchicalDepth_RT.filterMode = FilterMode.Point;
@@ -278,7 +282,6 @@ public class SSR : MonoBehaviour
 
         Vector2 HalfCameraSize = new Vector2(CameraSize.x / 2, CameraSize.y / 2);
         Vector2 CurrentCameraSize = new Vector2(RenderCamera.pixelWidth, RenderCamera.pixelHeight);
-        CameraSize = CurrentCameraSize;
 
         StochasticScreenSpaceReflectionMaterial.SetVector(SSR_Jitter_ID, new Vector4((float)CameraSize.x / 1024, (float)CameraSize.y / 1024, RandomSampler.x, RandomSampler.y));
         SSR_WorldToCameraMatrix = RenderCamera.worldToCameraMatrix;
@@ -338,7 +341,7 @@ public class SSR : MonoBehaviour
         RenderCamera = gameObject.GetComponent<Camera>();
         if (ScreenSpaceReflectionBuffer != null)
             RenderCamera.AddCommandBuffer(CameraEvent.BeforeImageEffectsOpaque, ScreenSpaceReflectionBuffer);
-        initResources();
+        updateRT();
     }
 
     void OnDisable()
@@ -354,6 +357,7 @@ public class SSR : MonoBehaviour
 
     private void OnPreRender()
     {
+        updateRT();
         UpdateUniform();
         RenderSSR();
     }

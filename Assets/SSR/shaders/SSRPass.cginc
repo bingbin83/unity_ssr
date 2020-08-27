@@ -1,10 +1,6 @@
 #include "UnityCG.cginc"
 #include "../../Common/Shaders/Resources/Include_HLSL.hlsl"
 
-#ifndef HiZ_Method_Advanced
-    #define HiZ_Method_Advanced 0
-#endif
-
 #ifndef AA_Filter
     #define AA_Filter 1
 #endif
@@ -125,17 +121,13 @@ void Hierarchical_ZTrace_MultiSPP(PixelInput i, out half4 SSRColor_PDF : SV_Targ
 		float3 rayDir = normalize( (rayProj.xyz / rayProj.w) - ScreenPos);
 		rayDir.xy *= 0.5;
 
-		#if HiZ_Method_Advanced
-			float4 RayHitData = Hierarchical_Z_Trace(_SSR_HiZ_MaxLevel, _SSR_HiZ_StartLevel, _SSR_HiZ_StopLevel, _SSR_NumSteps_HiZ, _SSR_Thickness, _SSR_RayCastSize.xy, rayStart, rayDir, _SSR_HierarchicalDepth_RT);
-		#else
-			float4 RayHitData = Hierarchical_Z_Trace(_SSR_HiZ_MaxLevel, _SSR_HiZ_StartLevel, _SSR_HiZ_StopLevel, _SSR_NumSteps_HiZ, _SSR_Thickness, 1 / _SSR_RayCastSize.xy, rayStart, rayDir, _SSR_HierarchicalDepth_RT, sampler_SSR_HierarchicalDepth_RT);
-		#endif
+		float4 RayHitData = Hierarchical_Z_Trace(_SSR_HiZ_MaxLevel, _SSR_HiZ_StartLevel, _SSR_HiZ_StopLevel, _SSR_NumSteps_HiZ, _SSR_Thickness, 1 / _SSR_RayCastSize.xy, rayStart, rayDir, _SSR_HierarchicalDepth_RT, sampler_SSR_HierarchicalDepth_RT);
 
 		float4 SampleColor = tex2Dlod(_SSR_SceneColor_RT, half4(RayHitData.xy, 0, 0));
 		SampleColor.rgb /= 1 + Luminance(SampleColor.rgb);
 
 		Out_Color += SampleColor;
-		Out_Mask += RayHitData.a * GetScreenFadeBord(RayHitData.xy, _SSR_ScreenFade);
+		Out_Mask += RayHitData.a *GetScreenFadeBord(RayHitData.xy, _SSR_ScreenFade);
 		Out_RayDepth += RayHitData.z;
 		Out_UV += RayHitData.xy;
 		Out_PDF += H.a;
@@ -155,8 +147,8 @@ void Hierarchical_ZTrace_MultiSPP(PixelInput i, out half4 SSRColor_PDF : SV_Targ
 
 ////////////////////////////////-----Spatio Sampler-----------------------------------------------------------------------------
 //static const int2 offset[4] = { int2(0, 0), int2(0, 2), int2(2, 0), int2(2, 2) };
-//static const int2 offset[9] ={int2(-1.0, -1.0), int2(0.0, -1.0), int2(1.0, -1.0), int2(-1.0, 0.0), int2(0.0, 0.0), int2(1.0, 0.0), int2(-1.0, 1.0), int2(0.0, 1.0), int2(1.0, 1.0)};
-static const int2 offset[9] ={int2(-2.0, -2.0), int2(0.0, -2.0), int2(2.0, -2.0), int2(-2.0, 0.0), int2(0.0, 0.0), int2(2.0, 0.0), int2(-2.0, 2.0), int2(0.0, 2.0), int2(2.0, 2.0)};
+static const int2 offset[9] ={int2(-1.0, -1.0), int2(0.0, -1.0), int2(1.0, -1.0), int2(-1.0, 0.0), int2(0.0, 0.0), int2(1.0, 0.0), int2(-1.0, 1.0), int2(0.0, 1.0), int2(1.0, 1.0)};
+//static const int2 offset[9] ={int2(-2.0, -2.0), int2(0.0, -2.0), int2(2.0, -2.0), int2(-2.0, 0.0), int2(0.0, 0.0), int2(2.0, 0.0), int2(-2.0, 2.0), int2(0.0, 2.0), int2(2.0, 2.0)};
 float4 Spatiofilter_MultiSPP(PixelInput i) : SV_Target
 {
 	half2 UV = i.uv.xy;
