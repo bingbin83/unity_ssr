@@ -17,8 +17,8 @@ public class SSR : MonoBehaviour
 
     private enum DebugPass
     {
-        Combine = 9,
-        SSRColor = 10
+        Combine = 4,
+        SSRColor = 5
     };
 
     private enum TraceApprox
@@ -29,12 +29,7 @@ public class SSR : MonoBehaviour
 
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    [Header("Common Property")]
-
-    [SerializeField]
-    TraceApprox TraceMethod = TraceApprox.HiZTrace;
-
-
+    [Header("RayTrace Property")]
     [SerializeField]
     RenderResolution RayCastingResolution = RenderResolution.Full;
 
@@ -58,56 +53,13 @@ public class SSR : MonoBehaviour
     [SerializeField]
     float ScreenFade = 0.1f;
 
-
-
-    [Header("HiZ_Trace Property")]
-
     [Range(32, 512)]
     [SerializeField]
     int HiZ_RaySteps = 58;
 
-
-    [Range(4, 10)]
-    [SerializeField]
-    int HiZ_MaxLevel = 10;
-
-
-    [Range(0, 2)]
-    [SerializeField]
-    int HiZ_StartLevel = 1;
-
-
-    [Range(0, 2)]
-    [SerializeField]
-    int HiZ_StopLevel = 0;
-
-
-
-    [Header("Linear_Trace Property")]
-
-    [SerializeField]
-    bool Linear_TraceBehind = false;
-
-
-    [SerializeField]
-    bool Linear_TowardRay = true;
-
-
-    //[Range(64, 512)]
-    //[SerializeField]
-    int Linear_RayDistance = 512;
-
-
-    [Range(64, 512)]
-    [SerializeField]
-    int Linear_RaySteps = 256;
-
-
-    [Range(5, 20)]
-    [SerializeField]
-    int Linear_StepSize = 10;
-
-
+    private int HiZ_MaxLevel = 10;
+    private int HiZ_StartLevel = 1;
+    private int HiZ_StopLevel = 0;
 
     [Header("Filtter Property")]
 
@@ -128,37 +80,23 @@ public class SSR : MonoBehaviour
     [SerializeField]
     float TemporalWeight = 0.98f;
 
-
     [Range(1, 5)]
     [SerializeField]
     float TemporalScale = 1.25f;
 
-
-
-    [Header("DeBug Property")]
-
-    [SerializeField]
-    bool Denoise = true;
-
-
-    [SerializeField]
-    bool RunTimeDebugMod = true;
-
-
+    [Header("Debug Property")]
     [SerializeField]
     DebugPass DeBugPass = DebugPass.SSRColor;
 
+    public bool enableTemporal = true;
+    [Range(0, 2.0f)]
+    public float _SSRIntensity = 1.0f;
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private static int RenderPass_HiZ_Depth = 0;
-    private static int RenderPass_Linear2D_SingelSPP = 1;
-    private static int RenderPass_HiZ3D_SingelSpp = 2;
-    private static int RenderPass_Linear2D_MultiSPP = 3;
-    private static int RenderPass_HiZ3D_MultiSpp = 4;
-    private static int RenderPass_Spatiofilter_SingleSPP = 5;
-    private static int RenderPass_Spatiofilter_MultiSPP = 6;
-    private static int RenderPass_Temporalfilter_SingleSPP = 7;
-    private static int RenderPass_Temporalfilter_MultiSpp = 8;
+    private static int RenderPass_HiZ3D_MultiSpp = 1;
+    private static int RenderPass_Spatiofilter_MultiSPP = 2;
+    private static int RenderPass_Temporalfilter_MultiSpp = 3;
 
     private Camera RenderCamera;
 
@@ -194,12 +132,8 @@ public class SSR : MonoBehaviour
     private Matrix4x4 SSR_WorldToCameraMatrix;
     private Matrix4x4 SSR_CameraToWorldMatrix;
 
-
-
     private RenderTexture[] SSR_TraceMask_RT = new RenderTexture[2]; private RenderTargetIdentifier[] SSR_TraceMask_ID = new RenderTargetIdentifier[2];
     private RenderTexture SSR_Spatial_RT, SSR_TemporalPrev_RT, SSR_TemporalCurr_RT, SSR_CombineScene_RT, SSR_HierarchicalDepth_RT, SSR_HierarchicalDepth_BackUp_RT, SSR_SceneColor_RT;
-
-
 
     private static int SSR_Jitter_ID = Shader.PropertyToID("_SSR_Jitter");
     private static int SSR_BRDFBias_ID = Shader.PropertyToID("_SSR_BRDFBias");
@@ -226,8 +160,6 @@ public class SSR : MonoBehaviour
     private static int SSR_HiZ_StartLevel_ID = Shader.PropertyToID("_SSR_HiZ_StartLevel");
     private static int SSR_HiZ_StopLevel_ID = Shader.PropertyToID("_SSR_HiZ_StopLevel");
 
-
-
     private static int SSR_Noise_ID = Shader.PropertyToID("_SSR_Noise");
     private static int SSR_PreintegratedGF_LUT_ID = Shader.PropertyToID("_SSR_PreintegratedGF_LUT");
 
@@ -235,14 +167,11 @@ public class SSR : MonoBehaviour
     private static int SSR_SceneColor_ID = Shader.PropertyToID("_SSR_SceneColor_RT");
     private static int SSR_CombineScene_ID = Shader.PropertyToID("_SSR_CombienReflection_RT");
 
-
-
     private static int SSR_Trace_ID = Shader.PropertyToID("_SSR_RayCastRT");
     private static int SSR_Mask_ID = Shader.PropertyToID("_SSR_RayMask_RT");
     private static int SSR_Spatial_ID = Shader.PropertyToID("_SSR_Spatial_RT");
     private static int SSR_TemporalPrev_ID = Shader.PropertyToID("_SSR_TemporalPrev_RT");
     private static int SSR_TemporalCurr_ID = Shader.PropertyToID("_SSR_TemporalCurr_RT");
-
 
 
     private static int SSR_ProjectionMatrix_ID = Shader.PropertyToID("_SSR_ProjectionMatrix");
@@ -253,6 +182,7 @@ public class SSR : MonoBehaviour
     private static int SSR_WorldToCameraMatrix_ID = Shader.PropertyToID("_SSR_WorldToCameraMatrix");
     private static int SSR_CameraToWorldMatrix_ID = Shader.PropertyToID("_SSR_CameraToWorldMatrix");
     private static int SSR_ProjectToPixelMatrix_ID = Shader.PropertyToID("_SSR_ProjectToPixelMatrix");
+    private static int SSR_Intensity_ID = Shader.PropertyToID("_SSRIntensity");
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private int m_SampleIndex = 0;
@@ -323,11 +253,17 @@ public class SSR : MonoBehaviour
             SSR_Spatial_RT.name = "resolved rt";
 
             //Temporal RT
+            RenderTexture.ReleaseTemporary(SSR_TemporalPrev_RT);
+            SSR_TemporalPrev_RT = RenderTexture.GetTemporary(RenderCamera.pixelWidth, RenderCamera.pixelHeight, 0, RenderTextureFormat.ARGBHalf);
+            SSR_TemporalPrev_RT.filterMode = FilterMode.Bilinear;
+            SSR_TemporalPrev_RT.name = "temporal prev rt";
+
             RenderTexture.ReleaseTemporary(SSR_TemporalCurr_RT);
             SSR_TemporalCurr_RT = RenderTexture.GetTemporary(RenderCamera.pixelWidth, RenderCamera.pixelHeight, 0, RenderTextureFormat.ARGBHalf);
             SSR_TemporalCurr_RT.filterMode = FilterMode.Bilinear;
             SSR_TemporalCurr_RT.name = "temporal rt";
 
+            // combine RT
             RenderTexture.ReleaseTemporary(SSR_CombineScene_RT);
             SSR_CombineScene_RT = RenderTexture.GetTemporary(RenderCamera.pixelWidth, RenderCamera.pixelHeight, 0, RenderTextureFormat.DefaultHDR);
             SSR_CombineScene_RT.filterMode = FilterMode.Point;
@@ -337,7 +273,9 @@ public class SSR : MonoBehaviour
 
     public void UpdateUniform()
     {
-        //RandomSampler = GenerateRandomOffset();
+        if(enableTemporal)
+            RandomSampler = GenerateRandomOffset();
+
         Vector2 HalfCameraSize = new Vector2(CameraSize.x / 2, CameraSize.y / 2);
         Vector2 CurrentCameraSize = new Vector2(RenderCamera.pixelWidth, RenderCamera.pixelHeight);
         CameraSize = CurrentCameraSize;
@@ -383,29 +321,16 @@ public class SSR : MonoBehaviour
         StochasticScreenSpaceReflectionMaterial.SetFloat(SSR_BRDFBias_ID, BRDFBias);
         StochasticScreenSpaceReflectionMaterial.SetFloat(SSR_ScreenFade_ID, ScreenFade);
         StochasticScreenSpaceReflectionMaterial.SetFloat(SSR_Thickness_ID, Thickness);
-        StochasticScreenSpaceReflectionMaterial.SetInt(SSR_RayStepSize_ID, Linear_StepSize);
-        StochasticScreenSpaceReflectionMaterial.SetInt(SSR_TraceDistance_ID, Linear_RayDistance);
-        StochasticScreenSpaceReflectionMaterial.SetInt(SSR_NumSteps_Linear_ID, Linear_RaySteps);
         StochasticScreenSpaceReflectionMaterial.SetInt(SSR_NumSteps_HiZ_ID, HiZ_RaySteps);
         StochasticScreenSpaceReflectionMaterial.SetInt(SSR_NumRays_ID, RayNums);
-        StochasticScreenSpaceReflectionMaterial.SetInt(SSR_BackwardsRay_ID, Linear_TowardRay ? 1 : 0);
-        StochasticScreenSpaceReflectionMaterial.SetInt(SSR_CullBack_ID, Linear_TowardRay ? 1 : 0);
-        StochasticScreenSpaceReflectionMaterial.SetInt(SSR_TraceBehind_ID, Linear_TraceBehind ? 1 : 0);
         StochasticScreenSpaceReflectionMaterial.SetInt(SSR_HiZ_MaxLevel_ID, HiZ_MaxLevel);
         StochasticScreenSpaceReflectionMaterial.SetInt(SSR_HiZ_StartLevel_ID, HiZ_StartLevel);
         StochasticScreenSpaceReflectionMaterial.SetInt(SSR_HiZ_StopLevel_ID, HiZ_StopLevel);
-        if (Denoise)
-        {
-            StochasticScreenSpaceReflectionMaterial.SetInt(SSR_NumResolver_ID, SpatioSampler);
-            StochasticScreenSpaceReflectionMaterial.SetFloat(SSR_TemporalScale_ID, TemporalScale);
-            StochasticScreenSpaceReflectionMaterial.SetFloat(SSR_TemporalWeight_ID, TemporalWeight);
-        }
-        else
-        {
-            StochasticScreenSpaceReflectionMaterial.SetInt(SSR_NumResolver_ID, 1);
-            StochasticScreenSpaceReflectionMaterial.SetFloat(SSR_TemporalScale_ID, 0);
-            StochasticScreenSpaceReflectionMaterial.SetFloat(SSR_TemporalWeight_ID, 0);
-        }
+
+        StochasticScreenSpaceReflectionMaterial.SetInt(SSR_NumResolver_ID, SpatioSampler);
+        StochasticScreenSpaceReflectionMaterial.SetFloat(SSR_TemporalScale_ID, TemporalScale);
+        StochasticScreenSpaceReflectionMaterial.SetFloat(SSR_TemporalWeight_ID, TemporalWeight);
+        StochasticScreenSpaceReflectionMaterial.SetFloat(SSR_Intensity_ID, _SSRIntensity);
     }
 
     private void OnEnable()
@@ -460,21 +385,30 @@ public class SSR : MonoBehaviour
 
         ScreenSpaceReflectionBuffer.SetGlobalTexture(SSR_Trace_ID, SSR_TraceMask_RT[0]);
         ScreenSpaceReflectionBuffer.SetGlobalTexture(SSR_Mask_ID, SSR_TraceMask_RT[1]);
-        ScreenSpaceReflectionBuffer.BlitMRT(SSR_TraceMask_ID, SSR_TraceMask_RT[0], StochasticScreenSpaceReflectionMaterial, (RayNums > 1) ? RenderPass_HiZ3D_MultiSpp : RenderPass_HiZ3D_SingelSpp);
+        ScreenSpaceReflectionBuffer.BlitMRT(SSR_TraceMask_ID, SSR_TraceMask_RT[0], StochasticScreenSpaceReflectionMaterial, RenderPass_HiZ3D_MultiSpp);
 
-        //////Spatial filter//////  
+        ////// 对多条光线进行resolved
         ScreenSpaceReflectionBuffer.SetGlobalTexture(SSR_Spatial_ID, SSR_Spatial_RT);
-        ScreenSpaceReflectionBuffer.BlitSRT(SSR_Spatial_RT, StochasticScreenSpaceReflectionMaterial, (RayNums > 1) ? RenderPass_Spatiofilter_MultiSPP : RenderPass_Spatiofilter_SingleSPP);
+        ScreenSpaceReflectionBuffer.BlitSRT(SSR_Spatial_RT, StochasticScreenSpaceReflectionMaterial, RenderPass_Spatiofilter_MultiSPP);
 
-        // 转接
-        ScreenSpaceReflectionBuffer.CopyTexture(SSR_Spatial_RT, SSR_TemporalCurr_RT);
-        ScreenSpaceReflectionBuffer.SetGlobalTexture(SSR_TemporalCurr_ID, SSR_TemporalCurr_RT);
+        if (enableTemporal)
+        {
+            ScreenSpaceReflectionBuffer.SetGlobalTexture(SSR_TemporalPrev_ID, SSR_TemporalPrev_RT);
+            ScreenSpaceReflectionBuffer.SetGlobalTexture(SSR_TemporalCurr_ID, SSR_TemporalCurr_RT);
+            ScreenSpaceReflectionBuffer.BlitSRT(SSR_TemporalCurr_RT, StochasticScreenSpaceReflectionMaterial, RenderPass_Temporalfilter_MultiSpp);
+            ScreenSpaceReflectionBuffer.CopyTexture(SSR_TemporalCurr_RT, SSR_TemporalPrev_RT);
+        }
+        else
+        {
+            ScreenSpaceReflectionBuffer.CopyTexture(SSR_Spatial_RT, SSR_TemporalCurr_RT);
+            ScreenSpaceReflectionBuffer.SetGlobalTexture(SSR_TemporalCurr_ID, SSR_TemporalCurr_RT);
+        }
 
         //////////// 得到数据后，直接做combine
 #if UNITY_EDITOR
         ScreenSpaceReflectionBuffer.BlitSRT(SSR_CombineScene_RT, BuiltinRenderTextureType.CameraTarget, StochasticScreenSpaceReflectionMaterial, (int)DeBugPass);
 #else
-        ScreenSpaceReflectionBuffer.BlitSRT(SSR_CombineScene_RT, BuiltinRenderTextureType.CameraTarget, StochasticScreenSpaceReflectionMaterial, 9);
+        ScreenSpaceReflectionBuffer.BlitSRT(SSR_CombineScene_RT, BuiltinRenderTextureType.CameraTarget, StochasticScreenSpaceReflectionMaterial, 4);
 #endif
 
         //////Set Last Frame ViewProjection//////
