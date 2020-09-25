@@ -141,7 +141,7 @@ void Hierarchical_ZTrace_MultiSPP(PixelInput i, out half4 SSRColor_PDF : SV_Targ
 	Out_UV /= _SSR_NumRays;
 	Out_PDF /= _SSR_NumRays;
 
-	SSRColor_PDF = half4(Out_Color.rgb, Out_PDF);
+    SSRColor_PDF = half4(Out_Color.rgb * Out_Mask, Out_PDF);
 	Mask_Depth_HitUV = half4(Square(Out_Mask), Out_RayDepth, Out_UV);
 }
 
